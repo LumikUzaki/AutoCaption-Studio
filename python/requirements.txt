@@ -1,0 +1,40 @@
+# Legendas Pro - Python Backend
+# Requirements para processamento de IA
+
+# Engine de Transcrição Principal
+faster-whisper>=1.0.0
+
+# Engine alternativa com timestamps precisos
+stable-ts>=2.19.0
+
+# WhisperX para alinhamento e diarização (opcional)
+# whisperx>=3.0.0
+
+# PyTorch com suporte CUDA
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# CTranslate2 para inferência otimizada
+ctranslate2>=4.0.0
+
+# Tradução Offline
+argos-translate>=1.9.0
+
+# MarianMT via Transformers (alternativa de tradução)
+transformers>=4.30.0
+sentencepiece>=0.1.99
+
+# Processamento de áudio
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Integração com FFmpeg
+ffmpeg-python>=0.2.0
+
+# Utilitários
+protobuf>=3.20.0
+huggingface-hub>=0.16.0
+tqdm>=4.65.0
+
+# Monitoramento de GPU
+pynvml>=11.5.0
