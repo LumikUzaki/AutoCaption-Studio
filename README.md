@@ -50,12 +50,22 @@ legendas-pro/
 ├── backend/
 │   ├── app.js                 # Ponto de entrada principal
 │   ├── controllers/           # Controladores da API
+│   │   ├── configuracao.controllers.js
+│   │   ├── job.controllers.js
+│   │   ├── video.controllers.js
+│   │   ├── transcricao.controllers.js
 │   ├── routes/                # Rotas da API
+│   │   ├── configuracao.routes.js
+│   │   ├── index.routes.js
+│   │   ├── job.routes.js
+│   │   ├── transcricao.routes.js
+│   │   ├── video.routes.js
 │   ├── services/              # Serviços de negócio
-│   │   ├── job.processor.js   # Processador de fila
+│   │   ├── job.processor.js   
 │   │   ├── subtitle.service.js
 │   │   ├── ffmpeg.service.js
 │   │   ├── whisperBridge.service.js
+│   │   └── multer.service.js
 │   │   └── queue.service.js
 │   ├── models/                # Modelos de dados
 │   │   └── database.js        # Schema SQLite
@@ -64,18 +74,12 @@ legendas-pro/
 │   ├── uploads/               # Arquivos temporários
 │   └── db/                    # Banco de dados SQLite
 ├── frontend/
-│   ├── views/                 # Páginas HTML
-│   │   ├── index.html
-│   │   ├── upload.html
-│   │   ├── processamento.html
-│   │   ├── editor.html
-│   │   ├── historico.html
-│   │   ├── lote.html
-│   │   └── configuracoes.html
-│   ├── js/
-│   │   ├── core/              # Módulos compartilhados
-│   │   └── pages/             # Scripts específicos por página
-│   └── css/                   # Estilos globais
+├── public/
+│   ├── assets/
+│   ├── css/ (style.css)
+│   ├── js/ (api.js, app.js, layout.js)
+│   └── js/pages/ (configuracoes, dashboard, editor, historico, lote, processamento, upload)
+│   └── index.html (Apenas o shell principal)
 ├── python/
 │   ├── scripts/
 │   │   └── transcribe.py      # Script principal de transcrição
