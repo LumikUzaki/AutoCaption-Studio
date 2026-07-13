@@ -2,14 +2,13 @@
   "name": "legendas-pro",
   "version": "1.0.0",
   "description": "Sistema profissional de transcrição, edição, tradução, exportação e renderização de legendas para vídeo",
-  "main": "backend/src/server.js",
-  "type": "commonjs",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node backend/src/server.js",
-    "dev": "nodemon backend/src/server.js",
-    "init:db": "node backend/src/database/init.js",
-    "worker": "node backend/src/workers/transcricao.worker.js",
-    "lint": "eslint backend/src/**/*.js"
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "init:db": "node backend/models/database.js",
+    "worker": "node backend/services/queue.js",
+    "lint": "eslint backend/**/*.js"
   },
   "keywords": [
     "legendas",
