@@ -40,3 +40,4 @@ function emitProgress(io, jobId, data) {
 
 module.exports = setupSocketIO;
 module.exports.emitProgress = emitProgress;
+module.exports.initializeSocket = setupSocketIO;

@@ -40,20 +40,28 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Inicialização do Banco de Dados e Filas
-try {
-    initDatabase();
-    console.log('✅ Banco de dados inicializado com sucesso.');
-    
-    startQueueProcessor(io);
-    console.log('✅ Processador de filas iniciado.');
-} catch (error) {
-    console.error('❌ Erro ao inicializar o sistema:', error);
-    process.exit(1);
+
+// Inicialização do Banco de Dados e Filas (assíncrono)
+async function initializeSystem() {
+    try {
+        initDatabase();
+        console.log('✅ Banco de dados inicializado com sucesso.');
+
+        await queueService.init();
+        console.log('✅ Processador de filas iniciado.');
+
+        // Configuração dos Sockets
+        setupSocketIO(io);
+
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao inicializar o sistema:', error);
+        process.exit(1);
+    }
 }
 
 // Configuração dos Sockets
-setupSocketIO(io);
+initializeSystem();
 
 // Constantes de Ambiente
 const PORT = process.env.PORT || 3000;
