@@ -1,257 +1,573 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Legendas Pro - Sistema Profissional de Legendagem</title>
-  <link rel="stylesheet" href="css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Legendas Pro - Editor de Legendas Profissional</title>
+    <meta name="description" content="Editor de legendas profissional com transcrição automática por IA">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components/header.css">
+    <link rel="stylesheet" href="css/components/sidebar.css">
+    <link rel="stylesheet" href="css/components/cards.css">
+    <link rel="stylesheet" href="css/components/buttons.css">
+    <link rel="stylesheet" href="css/components/forms.css">
+    <link rel="stylesheet" href="css/components/modals.css">
+    <link rel="stylesheet" href="css/components/toasts.css">
+    <link rel="stylesheet" href="css/components/tables.css">
+    <link rel="stylesheet" href="css/components/player.css">
+    <link rel="stylesheet" href="css/components/timeline.css">
+    <link rel="stylesheet" href="css/components/editor.css">
+    <link rel="stylesheet" href="css/components/queue.css">
+    <link rel="stylesheet" href="css/pages/dashboard.css">
+    <link rel="stylesheet" href="css/pages/editor.css">
+    <link rel="stylesheet" href="css/pages/queue.css">
+    <link rel="stylesheet" href="css/pages/settings.css">
+    <link rel="stylesheet" href="css/utilities.css">
+    <link rel="stylesheet" href="css/responsive.css">
 </head>
-<body>
-  <!-- Header -->
-  <header class="header">
-    <div class="header-left">
-      <h1 class="logo">🎬 Legendas Pro</h1>
+<body data-theme="dark" data-page="dashboard">
+    <!-- Header -->
+    <header class="header" role="banner">
+        <div class="header__container">
+            <div class="header__logo">
+                <span class="header__logo-icon">🎬</span>
+                <h1 class="header__logo-text">Legendas Pro</h1>
+            </div>
+            
+            <nav class="header__nav" role="navigation" aria-label="Navegação principal">
+                <button class="header__nav-btn" data-page="dashboard" aria-label="Dashboard">
+                    <span class="header__nav-icon">📊</span>
+                    <span class="header__nav-text">Dashboard</span>
+                </button>
+                <button class="header__nav-btn" data-page="queue" aria-label="Fila">
+                    <span class="header__nav-icon">⏳</span>
+                    <span class="header__nav-text">Fila</span>
+                </button>
+                <button class="header__nav-btn" data-page="settings" aria-label="Configurações">
+                    <span class="header__nav-icon">⚙️</span>
+                    <span class="header__nav-text">Config</span>
+                </button>
+            </nav>
+            
+            <div class="header__actions">
+                <button class="header__theme-toggle" id="themeToggle" aria-label="Alternar tema">
+                    <span class="theme-toggle__icon--light">☀️</span>
+                    <span class="theme-toggle__icon--dark">🌙</span>
+                </button>
+                <div class="header__status" id="systemStatus" title="Status do sistema">
+                    <span class="status-indicator status-indicator--online"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main" role="main" id="mainContent">
+        <!-- Dashboard Page -->
+        <section class="page page--dashboard" data-page="dashboard" id="page-dashboard">
+            <div class="page__header">
+                <h2 class="page__title">Meus Projetos</h2>
+                <button class="btn btn--primary" id="btnUploadVideo" data-action="upload">
+                    <span class="btn__icon">📁</span>
+                    <span class="btn__text">Novo Vídeo</span>
+                </button>
+            </div>
+            
+            <div class="dashboard__filters">
+                <div class="search-box">
+                    <input type="text" class="search-box__input" id="searchVideos" placeholder="Buscar vídeos..." aria-label="Buscar vídeos">
+                    <span class="search-box__icon">🔍</span>
+                </div>
+                <select class="select" id="filterStatus" aria-label="Filtrar por status">
+                    <option value="all">Todos os status</option>
+                    <option value="pending">Pendentes</option>
+                    <option value="processing">Processando</option>
+                    <option value="completed">Completos</option>
+                    <option value="failed">Falhados</option>
+                </select>
+                <select class="select" id="sortBy" aria-label="Ordenar por">
+                    <option value="date-desc">Mais recentes</option>
+                    <option value="date-asc">Mais antigos</option>
+                    <option value="name-asc">Nome (A-Z)</option>
+                    <option value="name-desc">Nome (Z-A)</option>
+                    <option value="duration-desc">Maior duração</option>
+                    <option value="duration-asc">Menor duração</option>
+                </select>
+            </div>
+            
+            <div class="videos-grid" id="videosGrid">
+                <!-- Vídeos serão renderizados aqui -->
+                <div class="videos-grid__empty" id="emptyVideos">
+                    <span class="empty__icon">🎬</span>
+                    <h3 class="empty__title">Nenhum vídeo ainda</h3>
+                    <p class="empty__text">Comece fazendo upload do seu primeiro vídeo</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Queue Page -->
+        <section class="page page--queue" data-page="queue" id="page-queue" hidden>
+            <div class="page__header">
+                <h2 class="page__title">Fila de Processamento</h2>
+                <button class="btn btn--secondary" id="btnRefreshQueue">
+                    <span class="btn__icon">🔄</span>
+                    <span class="btn__text">Atualizar</span>
+                </button>
+            </div>
+            
+            <div class="queue__stats" id="queueStats">
+                <div class="stat-card">
+                    <span class="stat-card__value" id="statWaiting">0</span>
+                    <span class="stat-card__label">Aguardando</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card__value" id="statActive">0</span>
+                    <span class="stat-card__label">Ativos</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card__value" id="statCompleted">0</span>
+                    <span class="stat-card__label">Completos</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-card__value" id="statFailed">0</span>
+                    <span class="stat-card__label">Falhados</span>
+                </div>
+            </div>
+            
+            <div class="queue__list" id="queueList">
+                <!-- Jobs serão renderizados aqui -->
+            </div>
+        </section>
+
+        <!-- Editor Page -->
+        <section class="page page--editor" data-page="editor" id="page-editor" hidden>
+            <div class="editor__header">
+                <button class="btn btn--ghost" id="btnBackToDashboard">
+                    <span class="btn__icon">←</span>
+                    <span class="btn__text">Voltar</span>
+                </button>
+                <h2 class="editor__title" id="editorVideoTitle">Título do Vídeo</h2>
+                <div class="editor__actions">
+                    <button class="btn btn--secondary" id="btnExportSubtitle">
+                        <span class="btn__icon">📥</span>
+                        <span class="btn__text">Exportar Legenda</span>
+                    </button>
+                    <button class="btn btn--secondary" id="btnTranslate">
+                        <span class="btn__icon">🌐</span>
+                        <span class="btn__text">Traduzir</span>
+                    </button>
+                    <button class="btn btn--primary" id="btnRenderHardsub">
+                        <span class="btn__icon">🎞️</span>
+                        <span class="btn__text">Renderizar Hardsub</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="editor__content">
+                <div class="editor__player-container">
+                    <video class="editor__video" id="videoPlayer" controls crossorigin="anonymous">
+                        Seu navegador não suporta o elemento de vídeo.
+                    </video>
+                    <div class="player__controls-extra">
+                        <button class="player__btn" id="btnPlayPause" title="Play/Pause (Espaço)">
+                            <span class="player__btn-icon">▶️</span>
+                        </button>
+                        <span class="player__time" id="playerTime">00:00:00 / 00:00:00</span>
+                        <button class="player__btn" id="btnZoomIn" title="Zoom In">+</button>
+                        <button class="player__btn" id="btnZoomOut" title="Zoom Out">-</button>
+                        <span class="player__zoom" id="playerZoom">100%</span>
+                    </div>
+                </div>
+                
+                <div class="editor__timeline-container">
+                    <div class="timeline__toolbar">
+                        <button class="btn btn--small" id="btnAddSegment" title="Adicionar segmento">
+                            <span>➕</span>
+                        </button>
+                        <button class="btn btn--small" id="btnDeleteSegment" title="Excluir selecionados">
+                            <span>🗑️</span>
+                        </button>
+                        <button class="btn btn--small" id="btnSplitSegment" title="Dividir segmento">
+                            <span>✂️</span>
+                        </button>
+                        <button class="btn btn--small" id="btnMergeSegments" title="Mesclar segmentos">
+                            <span>🔗</span>
+                        </button>
+                        <button class="btn btn--small" id="btnUndo" title="Desfazer (Ctrl+Z)">
+                            <span>↩️</span>
+                        </button>
+                        <button class="btn btn--small" id="btnRedo" title="Refazer (Ctrl+Y)">
+                            <span>↪️</span>
+                        </button>
+                    </div>
+                    <div class="timeline__wrapper">
+                        <div class="timeline" id="timeline">
+                            <div class="timeline__ruler" id="timelineRuler"></div>
+                            <div class="timeline__segments" id="timelineSegments"></div>
+                            <div class="timeline__playhead" id="timelinePlayhead"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="editor__segments-list">
+                    <div class="segments-list__header">
+                        <h3 class="segments-list__title">Segmentos</h3>
+                        <span class="segments-list__count" id="segmentsCount">0 segmentos</span>
+                    </div>
+                    <div class="segments-list__container" id="segmentsList">
+                        <!-- Segmentos serão renderizados aqui -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Settings Page -->
+        <section class="page page--settings" data-page="settings" id="page-settings" hidden>
+            <div class="page__header">
+                <h2 class="page__title">Configurações</h2>
+                <button class="btn btn--primary" id="btnSaveSettings">
+                    <span class="btn__icon">💾</span>
+                    <span class="btn__text">Salvar</span>
+                </button>
+            </div>
+            
+            <div class="settings__grid">
+                <div class="settings__card">
+                    <h3 class="settings__card-title">📝 Transcrição</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="settingEngine">Engine</label>
+                        <select class="select" id="settingEngine">
+                            <option value="faster-whisper">Faster-Whisper (Recomendado)</option>
+                            <option value="stable-ts">Stable-ts (Precisão)</option>
+                            <option value="whisperx">WhisperX (Diarização)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="settingModel">Modelo</label>
+                        <select class="select" id="settingModel">
+                            <option value="tiny">Tiny (Rápido, menos preciso)</option>
+                            <option value="base">Base</option>
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large-v3" selected>Large-v3 (Melhor qualidade)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="settingLanguage">Idioma</label>
+                        <select class="select" id="settingLanguage">
+                            <option value="auto">Detectar automaticamente</option>
+                            <option value="pt">Português</option>
+                            <option value="en">Inglês</option>
+                            <option value="es">Espanhol</option>
+                            <option value="fr">Francês</option>
+                            <option value="de">Alemão</option>
+                            <option value="it">Italiano</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Opções</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox">
+                                <input type="checkbox" id="settingWordTimestamps" checked>
+                                <span>Timestamps por palavra</span>
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" id="settingDiarization">
+                                <span>Diarização (identificar falantes)</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings__card">
+                    <h3 class="settings__card-title">🌐 Tradução</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="settingTranslator">Motor</label>
+                        <select class="select" id="settingTranslator">
+                            <option value="argos">Argos Translate (Offline)</option>
+                            <option value="marian">MarianMT (Qualidade)</option>
+                            <option value="nllb">NLLB (200+ idiomas)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="settingTargetLanguage">Idioma Alvo</label>
+                        <select class="select" id="settingTargetLanguage">
+                            <option value="pt">Português</option>
+                            <option value="en" selected>Inglês</option>
+                            <option value="es">Espanhol</option>
+                            <option value="fr">Francês</option>
+                            <option value="de">Alemão</option>
+                            <option value="it">Italiano</option>
+                            <option value="ja">Japonês</option>
+                            <option value="ko">Coreano</option>
+                            <option value="zh">Chinês</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="settings__card">
+                    <h3 class="settings__card-title">🎞️ Renderização</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="settingFont">Fonte</label>
+                        <select class="select" id="settingFont">
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Impact">Impact</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="settingFontSize">Tamanho</label>
+                        <input type="number" class="input" id="settingFontSize" value="48" min="12" max="120">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="settingFontColor">Cor</label>
+                        <input type="color" class="input input--color" id="settingFontColor" value="#ffffff">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="settingPosition">Posição</label>
+                        <select class="select" id="settingPosition">
+                            <option value="bottom">Inferior</option>
+                            <option value="center">Centro</option>
+                            <option value="top">Superior</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="settings__card">
+                    <h3 class="settings__card-title">⚙️ Sistema</h3>
+                    <div class="form-group">
+                        <label class="form-label" for="settingMaxConcurrentJobs">Jobs simultâneos</label>
+                        <input type="number" class="input" id="settingMaxConcurrentJobs" value="2" min="1" max="8">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tema</label>
+                        <div class="radio-group">
+                            <label class="radio">
+                                <input type="radio" name="theme" value="light">
+                                <span>Claro</span>
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="theme" value="dark" checked>
+                                <span>Escuro</span>
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="theme" value="auto">
+                                <span>Automático</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Dados</label>
+                        <div class="button-group">
+                            <button class="btn btn--secondary btn--small" id="btnBackup">📦 Backup</button>
+                            <button class="btn btn--danger btn--small" id="btnReset">🗑️ Resetar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modalOverlay" hidden>
+        <!-- Upload Modal -->
+        <div class="modal" id="modalUpload" role="dialog" aria-modal="true" aria-labelledby="modalUploadTitle">
+            <div class="modal__header">
+                <h3 class="modal__title" id="modalUploadTitle">Upload de Vídeo</h3>
+                <button class="modal__close" id="closeModalUpload" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="modal__body">
+                <div class="upload-area" id="uploadArea">
+                    <span class="upload-area__icon">📁</span>
+                    <p class="upload-area__text">Arraste e solte o vídeo aqui</p>
+                    <p class="upload-area__subtext">ou clique para selecionar</p>
+                    <p class="upload-area__formats">MP4, WebM, AVI, MOV, MKV (máx. 5GB)</p>
+                    <input type="file" class="upload-area__input" id="videoFileInput" accept="video/*" hidden>
+                </div>
+                <div class="upload-progress" id="uploadProgress" hidden>
+                    <div class="progress-bar">
+                        <div class="progress-bar__fill" id="uploadProgressBar"></div>
+                    </div>
+                    <p class="upload-progress__text" id="uploadProgressText">Enviando...</p>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--secondary" id="cancelUpload">Cancelar</button>
+                <button class="btn btn--primary" id="confirmUpload" disabled>Transcrever</button>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div class="modal" id="modalExport" role="dialog" aria-modal="true" aria-labelledby="modalExportTitle">
+            <div class="modal__header">
+                <h3 class="modal__title" id="modalExportTitle">Exportar Legenda</h3>
+                <button class="modal__close" id="closeModalExport" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label class="form-label" for="exportFormat">Formato</label>
+                    <select class="select" id="exportFormat">
+                        <option value="srt">SRT (SubRip)</option>
+                        <option value="vtt">VTT (WebVTT)</option>
+                        <option value="ass">ASS (Advanced SubStation Alpha)</option>
+                        <option value="ssa">SSA (SubStation Alpha)</option>
+                        <option value="txt">TXT (Texto simples)</option>
+                        <option value="json">JSON</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Opções</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="exportIncludeMetadata" checked>
+                            <span>Incluir metadados</span>
+                        </label>
+                        <label class="checkbox">
+                            <input type="checkbox" id="exportEncodeUtf8" checked>
+                            <span>Codificação UTF-8</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--secondary" id="cancelExport">Cancelar</button>
+                <button class="btn btn--primary" id="confirmExport">Exportar</button>
+            </div>
+        </div>
+
+        <!-- Translate Modal -->
+        <div class="modal" id="modalTranslate" role="dialog" aria-modal="true" aria-labelledby="modalTranslateTitle">
+            <div class="modal__header">
+                <h3 class="modal__title" id="modalTranslateTitle">Traduzir Legendas</h3>
+                <button class="modal__close" id="closeModalTranslate" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label class="form-label" for="translateSourceLang">Idioma Original</label>
+                    <select class="select" id="translateSourceLang">
+                        <option value="auto">Detectar automaticamente</option>
+                        <option value="pt">Português</option>
+                        <option value="en">Inglês</option>
+                        <option value="es">Espanhol</option>
+                        <option value="fr">Francês</option>
+                        <option value="de">Alemão</option>
+                        <option value="it">Italiano</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="translateTargetLang">Idioma Alvo</label>
+                    <select class="select" id="translateTargetLang">
+                        <option value="pt">Português</option>
+                        <option value="en" selected>Inglês</option>
+                        <option value="es">Espanhol</option>
+                        <option value="fr">Francês</option>
+                        <option value="de">Alemão</option>
+                        <option value="it">Italiano</option>
+                        <option value="ja">Japonês</option>
+                        <option value="ko">Coreano</option>
+                        <option value="zh">Chinês</option>
+                        <option value="ru">Russo</option>
+                        <option value="ar">Árabe</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="translateEngine">Motor</label>
+                    <select class="select" id="translateEngine">
+                        <option value="argos">Argos Translate (Rápido)</option>
+                        <option value="marian">MarianMT (Qualidade)</option>
+                        <option value="nllb">NLLB (200+ idiomas)</option>
+                    </select>
+                </div>
+                <div class="alert alert--info">
+                    <span class="alert__icon">ℹ️</span>
+                    <span class="alert__text">A tradução criará uma nova faixa de legenda, mantendo a original.</span>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--secondary" id="cancelTranslate">Cancelar</button>
+                <button class="btn btn--primary" id="confirmTranslate">Traduzir</button>
+            </div>
+        </div>
+
+        <!-- Render Modal -->
+        <div class="modal" id="modalRender" role="dialog" aria-modal="true" aria-labelledby="modalRenderTitle">
+            <div class="modal__header">
+                <h3 class="modal__title" id="modalRenderTitle">Renderizar Hardsub</h3>
+                <button class="modal__close" id="closeModalRender" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="modal__body">
+                <div class="form-group">
+                    <label class="form-label" for="renderFormat">Formato de Saída</label>
+                    <select class="select" id="renderFormat">
+                        <option value="mp4">MP4 (H.264)</option>
+                        <option value="webm">WebM (VP9)</option>
+                        <option value="mkv">MKV</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="renderQuality">Qualidade</label>
+                    <select class="select" id="renderQuality">
+                        <option value="low">Baixa (720p)</option>
+                        <option value="medium" selected>Média (1080p)</option>
+                        <option value="high">Alta (4K)</option>
+                        <option value="original">Original</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Estilo da Legenda</label>
+                    <div class="style-preview" id="stylePreview">
+                        <span class="style-preview__text">Prévia da legenda</span>
+                    </div>
+                </div>
+                <div class="alert alert--warning">
+                    <span class="alert__icon">⚠️</span>
+                    <span class="alert__text">A renderização pode demorar vários minutos dependendo do tamanho do vídeo.</span>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--secondary" id="cancelRender">Cancelar</button>
+                <button class="btn btn--primary" id="confirmRender">Renderizar</button>
+            </div>
+        </div>
+
+        <!-- Confirm Modal -->
+        <div class="modal modal--confirm" id="modalConfirm" role="dialog" aria-modal="true" aria-labelledby="modalConfirmTitle">
+            <div class="modal__body">
+                <h3 class="modal__title" id="modalConfirmTitle">Confirmar ação</h3>
+                <p class="modal__message" id="modalConfirmMessage">Tem certeza?</p>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--secondary" id="cancelConfirm">Cancelar</button>
+                <button class="btn btn--danger" id="confirmAction">Confirmar</button>
+            </div>
+        </div>
     </div>
-    <nav class="header-nav">
-      <a href="#dashboard" class="nav-link active" data-page="dashboard">Dashboard</a>
-      <a href="#processamento" class="nav-link" data-page="processamento">Processamento</a>
-      <a href="#editor" class="nav-link" data-page="editor">Editor</a>
-      <a href="#historico" class="nav-link" data-page="historico">Histórico</a>
-      <a href="#configuracoes" class="nav-link" data-page="configuracoes">Configurações</a>
-    </nav>
-    <div class="header-right">
-      <span class="status-indicator" id="serverStatus">🟢 Online</span>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer" role="alert" aria-live="polite"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" hidden>
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p class="loading-text" id="loadingText">Carregando...</p>
+        </div>
     </div>
-  </header>
 
-  <!-- Main Content -->
-  <main class="main-content">
-    <!-- Página: Dashboard -->
-    <section id="dashboard" class="page active">
-      <div class="page-header">
-        <h2>Dashboard</h2>
-        <p>Gerencie seus vídeos e transcrições</p>
-      </div>
-
-      <!-- Upload Area -->
-      <div class="upload-section">
-        <div class="upload-area" id="uploadArea">
-          <div class="upload-icon">📁</div>
-          <h3>Arraste e solte seu vídeo aqui</h3>
-          <p>ou clique para selecionar um arquivo</p>
-          <p class="upload-formats">Formatos suportados: MP4, MKV, AVI, MOV, WEBM, MP3, WAV</p>
-          <input type="file" id="videoInput" accept="video/*,audio/*" hidden>
-        </div>
-      </div>
-
-      <!-- Videos List -->
-      <div class="videos-section">
-        <div class="section-header">
-          <h3>Vídeos</h3>
-          <button class="btn btn-primary" id="refreshVideos">🔄 Atualizar</button>
-        </div>
-        <div class="videos-grid" id="videosGrid">
-          <!-- Vídeos serão carregados aqui -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Página: Editor -->
-    <section id="editor" class="page">
-      <div class="editor-container">
-        <!-- Video Player -->
-        <div class="video-section">
-          <div class="video-player-wrapper">
-            <video id="videoPlayer" controls></video>
-          </div>
-          <div class="video-controls">
-            <button class="btn btn-secondary" id="playPauseBtn">▶️ Play</button>
-            <span id="currentTime">00:00:00</span>
-            <span>/</span>
-            <span id="totalTime">00:00:00</span>
-          </div>
-        </div>
-
-        <!-- Timeline -->
-        <div class="timeline-section">
-          <div class="timeline-header">
-            <h3>Timeline</h3>
-            <div class="timeline-controls">
-              <button class="btn btn-sm" id="zoomIn">➕</button>
-              <button class="btn btn-sm" id="zoomOut">➖</button>
-            </div>
-          </div>
-          <div class="timeline-container" id="timelineContainer">
-            <!-- Segmentos da timeline -->
-          </div>
-        </div>
-
-        <!-- Subtitle List -->
-        <div class="subtitles-section">
-          <div class="subtitles-header">
-            <h3>Legendas</h3>
-            <div class="subtitle-controls">
-              <button class="btn btn-primary" id="addSubtitle">➕ Adicionar</button>
-              <button class="btn btn-success" id="exportSubtitle">💾 Exportar</button>
-            </div>
-          </div>
-          <div class="subtitles-list" id="subtitlesList">
-            <!-- Lista de legendas -->
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Página: Processamento -->
-    <section id="processamento" class="page">
-      <div class="page-header">
-        <h2>Processamento</h2>
-        <p>Acompanhe o progresso da transcrição</p>
-      </div>
-      
-      <div class="processing-container" id="processingContainer">
-        <div class="processing-card">
-          <div class="processing-icon">🎬</div>
-          <h3 id="processingVideoName">Carregando...</h3>
-          
-          <div class="progress-section">
-            <div class="progress-info">
-              <span id="processingStatus">Aguardando...</span>
-              <span id="processingPercent">0%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" id="progressFill"></div>
-            </div>
-          </div>
-          
-          <div class="processing-details">
-            <div class="detail-item">
-              <span class="detail-label">Engine:</span>
-              <span class="detail-value" id="processingEngine">-</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Modelo:</span>
-              <span class="detail-value" id="processingModel">-</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Dispositivo:</span>
-              <span class="detail-value" id="processingDevice">-</span>
-            </div>
-          </div>
-          
-          <div class="processing-log" id="processingLog">
-            <!-- Logs em tempo real -->
-          </div>
-          
-          <div class="processing-actions">
-            <button class="btn btn-secondary" onclick="location.href='#dashboard'">⬅️ Voltar</button>
-            <button class="btn btn-success" id="btnOpenEditor" style="display: none;">✏️ Abrir Editor</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Página: Histórico -->
-    <section id="historico" class="page">
-      <div class="page-header">
-        <h2>Histórico</h2>
-        <p>Veja todas as transcrições realizadas</p>
-      </div>
-      <div class="table-container">
-        <table class="data-table" id="historicoTable">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Vídeo</th>
-              <th>Engine</th>
-              <th>Status</th>
-              <th>Progresso</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Dados do histórico -->
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Página: Configurações -->
-    <section id="configuracoes" class="page">
-      <div class="page-header">
-        <h2>Configurações</h2>
-        <p>Personalize o comportamento do sistema</p>
-      </div>
-      <div class="settings-grid" id="settingsGrid">
-        <!-- Configurações serão carregadas aqui -->
-      </div>
-    </section>
-  </main>
-
-  <!-- Modal de Transcrição -->
-  <div class="modal" id="transcricaoModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Configurar Transcrição</h3>
-        <button class="modal-close" id="closeTranscricaoModal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="transcricaoForm">
-          <input type="hidden" id="videoIdInput">
-          
-          <div class="form-group">
-            <label for="engineSelect">Engine</label>
-            <select id="engineSelect" required>
-              <option value="faster-whisper">Faster Whisper (Recomendado)</option>
-              <option value="stable-ts">Stable TS</option>
-              <option value="whisperx">WhisperX</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="modelSelect">Modelo</label>
-            <select id="modelSelect" required>
-              <option value="tiny">Tiny (Mais rápido, menos preciso)</option>
-              <option value="base" selected>Base (Equilibrado)</option>
-              <option value="small">Small (Mais preciso)</option>
-              <option value="medium">Medium (Muito preciso)</option>
-              <option value="large">Large (Máxima precisão)</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="deviceSelect">Dispositivo</label>
-            <select id="deviceSelect" required>
-              <option value="cuda">GPU (CUDA) - Recomendado</option>
-              <option value="cpu">CPU</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="languageSelect">Idioma</label>
-            <select id="languageSelect" required>
-              <option value="pt">Português</option>
-              <option value="en">Inglês</option>
-              <option value="es">Espanhol</option>
-              <option value="fr">Francês</option>
-              <option value="de">Alemão</option>
-              <option value="it">Italiano</option>
-              <option value="auto">Automático</option>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="cancelTranscricao">Cancelar</button>
-        <button class="btn btn-primary" id="startTranscricao">Iniciar Transcrição</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notifications -->
-  <div class="toast-container" id="toastContainer"></div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="js/app.js"></script>
+    <!-- Scripts -->
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
