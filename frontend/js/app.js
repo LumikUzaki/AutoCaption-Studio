@@ -1,732 +1,227 @@
 /**
  * Legendas Pro - Aplicação Frontend
- * Gerencia navegação, upload, edição e comunicação com o backend
+ * HTML5 + CSS3 + JavaScript ES2023 (zero frameworks)
  */
 
-// ============================================
-// Estado Global
-// ============================================
+// Importações de módulos
+import { Router } from './core/router.js';
+import { Store } from './store/index.js';
+import { APIClient } from './services/api.client.js';
+import { SocketClient } from './services/socket.client.js';
+import { ToastService } from './services/toast.service.js';
+import { ModalService } from './services/modal.service.js';
+import { VideoComponent } from './components/video.component.js';
+import { EditorComponent } from './components/editor.component.js';
+import { QueueComponent } from './components/queue.component.js';
 
-const state = {
-  currentVideo: null,
-  currentTranscricao: null,
-  segmentos: [],
-  isPlaying: false,
-  zoom: 1,
-  socket: null
-};
+/**
+ * Classe principal da aplicação
+ */
+class App {
+    constructor() {
+        this.store = new Store();
+        this.api = new APIClient();
+        this.socket = new SocketClient();
+        this.toast = new ToastService();
+        this.modal = new ModalService();
+        this.router = new Router();
+        
+        // Componentes
+        this.videoComponent = new VideoComponent(this.store, this.api, this.toast);
+        this.editorComponent = new EditorComponent(this.store, this.api, this.toast, this.modal);
+        this.queueComponent = new QueueComponent(this.store, this.socket);
+        
+        this.initialized = false;
+    }
 
-// ============================================
-// Inicialização
-// ============================================
+    /**
+     * Inicializa a aplicação
+     */
+    async init() {
+        try {
+            console.log('🎬 Legendas Pro - Inicializando...');
+            
+            // Configurar tema
+            this.setupTheme();
+            
+            // Conectar WebSocket
+            await this.socket.connect();
+            
+            // Configurar event listeners globais
+            this.setupGlobalListeners();
+            
+            // Carregar dados iniciais
+            await this.loadInitialData();
+            
+            // Configurar router
+            this.router.init(this.store);
+            
+            // Renderizar página inicial
+            this.renderCurrentPage();
+            
+            this.initialized = true;
+            this.toast.show('Sistema pronto!', 'success');
+            
+            console.log('✅ Aplicação inicializada com sucesso');
+        } catch (error) {
+            console.error('❌ Erro na inicialização:', error);
+            this.toast.show('Erro ao iniciar aplicação', 'error');
+        }
+    }
 
+    /**
+     * Configura o tema da aplicação
+     */
+    setupTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', savedTheme);
+        
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
+    }
+
+    /**
+     * Alterna entre temas claro e escuro
+     */
+    toggleTheme() {
+        const currentTheme = document.body.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.body.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+
+    /**
+     * Configura event listeners globais
+     */
+    setupGlobalListeners() {
+        // Navegação no header
+        document.querySelectorAll('.header__nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const page = e.currentTarget.dataset.page;
+                this.router.navigate(page);
+            });
+        });
+
+        // Voltar ao dashboard
+        const btnBack = document.getElementById('btnBackToDashboard');
+        if (btnBack) {
+            btnBack.addEventListener('click', () => this.router.navigate('dashboard'));
+        }
+
+        // Upload de vídeo
+        const btnUpload = document.getElementById('btnUploadVideo');
+        if (btnUpload) {
+            btnUpload.addEventListener('click', () => this.modal.open('upload'));
+        }
+
+        // Atalhos de teclado
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+Z para undo
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                this.editorComponent.undo();
+            }
+            // Ctrl+Y para redo
+            if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                this.editorComponent.redo();
+            }
+            // Espaço para play/pause no editor
+            if (e.key === ' ' && this.store.state.app.currentPage === 'editor') {
+                e.preventDefault();
+                this.editorComponent.togglePlayPause();
+            }
+            // Escape para fechar modais
+            if (e.key === 'Escape') {
+                this.modal.closeAll();
+            }
+        });
+
+        // Sistema online/offline
+        window.addEventListener('online', () => this.updateSystemStatus('online'));
+        window.addEventListener('offline', () => this.updateSystemStatus('offline'));
+    }
+
+    /**
+     * Carrega dados iniciais
+     */
+    async loadInitialData() {
+        try {
+            // Carregar vídeos
+            const videos = await this.api.get('/videos');
+            this.store.dispatch({ type: 'SET_VIDEOS', payload: videos });
+            
+            // Carregar fila
+            const queue = await this.api.get('/queue/status');
+            this.store.dispatch({ type: 'SET_QUEUE', payload: queue });
+            
+            // Carregar configurações
+            const settings = await this.api.get('/config');
+            this.store.dispatch({ type: 'SET_SETTINGS', payload: settings });
+        } catch (error) {
+            console.error('Erro ao carregar dados iniciais:', error);
+        }
+    }
+
+    /**
+     * Renderiza a página atual
+     */
+    renderCurrentPage() {
+        const currentPage = this.store.state.app.currentPage;
+        
+        // Esconder todas as páginas
+        document.querySelectorAll('.page').forEach(page => {
+            page.hidden = true;
+        });
+        
+        // Mostrar página atual
+        const activePage = document.getElementById(`page-${currentPage}`);
+        if (activePage) {
+            activePage.hidden = false;
+        }
+        
+        // Atualizar navegação
+        document.querySelectorAll('.header__nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.page === currentPage);
+        });
+        
+        // Atualizar body data attribute
+        document.body.setAttribute('data-page', currentPage);
+        
+        // Renderizar conteúdo específico da página
+        switch (currentPage) {
+            case 'dashboard':
+                this.videoComponent.render();
+                break;
+            case 'editor':
+                this.editorComponent.render();
+                break;
+            case 'queue':
+                this.queueComponent.render();
+                break;
+            case 'settings':
+                // Settings já é estático no HTML
+                break;
+        }
+    }
+
+    /**
+     * Atualiza status do sistema
+     */
+    updateSystemStatus(status) {
+        const indicator = document.querySelector('.status-indicator');
+        if (indicator) {
+            indicator.className = `status-indicator status-indicator--${status}`;
+        }
+    }
+}
+
+// Inicializar aplicação quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
-  initSocket();
-  initNavigation();
-  initUpload();
-  initEditor();
-  initModals();
-  loadVideos();
-  loadConfiguracoes();
-  checkServerStatus();
-  
-  // Atualizar lista de vídeos periodicamente
-  setInterval(loadVideos, 30000);
+    window.app = new App();
+    window.app.init();
 });
 
-// ============================================
-// Socket.IO
-// ============================================
-
-function initSocket() {
-  state.socket = io();
-  
-  state.socket.on('connect', () => {
-    console.log('✅ Conectado ao servidor via WebSocket');
-    updateServerStatus(true);
-  });
-  
-  state.socket.on('disconnect', () => {
-    console.log('❌ Desconectado do servidor');
-    updateServerStatus(false);
-  });
-  
-  state.socket.on('progress-update', (data) => {
-    console.log('Progresso:', data);
-    showToast(`Progresso: ${data.progress}%`, 'info');
-  });
-}
-
-function updateServerStatus(online) {
-  const statusEl = document.getElementById('serverStatus');
-  statusEl.textContent = online ? '🟢 Online' : '🔴 Offline';
-  statusEl.style.color = online ? 'var(--success)' : 'var(--danger)';
-}
-
-function checkServerStatus() {
-  fetch('/api/health')
-    .then(res => res.json())
-    .then(data => {
-      updateServerStatus(data.status === 'ok');
-    })
-    .catch(() => {
-      updateServerStatus(false);
-    });
-}
-
-// ============================================
-// Navegação
-// ============================================
-
-function initNavigation() {
-  const navLinks = document.querySelectorAll('.nav-link');
-  
-  navLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      
-      // Remover active de todos
-      navLinks.forEach(l => l.classList.remove('active'));
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      
-      // Adicionar active ao clicado
-      link.classList.add('active');
-      const pageId = link.dataset.page;
-      document.getElementById(pageId).classList.add('active');
-      
-      // Carregar dados específicos da página
-      if (pageId === 'dashboard') loadVideos();
-      if (pageId === 'historico') loadHistorico();
-      if (pageId === 'configuracoes') loadConfiguracoes();
-    });
-  });
-}
-
-// ============================================
-// Upload de Vídeos
-// ============================================
-
-function initUpload() {
-  const uploadArea = document.getElementById('uploadArea');
-  const videoInput = document.getElementById('videoInput');
-  
-  // Click para selecionar arquivo
-  uploadArea.addEventListener('click', () => {
-    videoInput.click();
-  });
-  
-  // Drag and drop
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('dragover');
-  });
-  
-  uploadArea.addEventListener('dragleave', () => {
-    uploadArea.classList.remove('dragover');
-  });
-  
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove('dragover');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      uploadVideo(files[0]);
-    }
-  });
-  
-  // Input file change
-  videoInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-      uploadVideo(e.target.files[0]);
-    }
-  });
-}
-
-async function uploadVideo(file) {
-  const formData = new FormData();
-  formData.append('video', file);
-  
-  try {
-    showToast('Iniciando upload...', 'info');
-    
-    const response = await fetch('/api/videos/upload', {
-      method: 'POST',
-      body: formData
-    });
-    
-    const result = await response.json();
-    
-    if (response.ok && result.success) {
-      showToast('Vídeo enviado com sucesso!', 'success');
-      loadVideos();
-    } else {
-      showToast(result.error || 'Erro no upload', 'error');
-    }
-  } catch (error) {
-    console.error('Erro no upload:', error);
-    showToast('Erro ao enviar vídeo', 'error');
-  }
-}
-
-// ============================================
-// Lista de Vídeos
-// ============================================
-
-async function loadVideos() {
-  try {
-    const response = await fetch('/api/videos?limit=50&offset=0');
-    const result = await response.json();
-    
-    if (result.success) {
-      renderVideos(result.data);
-    }
-  } catch (error) {
-    console.error('Erro ao carregar vídeos:', error);
-  }
-}
-
-function renderVideos(videos) {
-  const grid = document.getElementById('videosGrid');
-  
-  if (videos.length === 0) {
-    grid.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Nenhum vídeo encontrado. Faça upload de um vídeo para começar.</p>';
-    return;
-  }
-  
-  grid.innerHTML = videos.map(video => `
-    <div class="video-card" data-id="${video.id}">
-      <div class="video-thumbnail">🎬</div>
-      <div class="video-info">
-        <h4 class="video-title">${escapeHtml(video.original_name)}</h4>
-        <p class="video-meta">${formatFileSize(video.filesize)} • ${video.mimetype.split('/')[1].toUpperCase()}</p>
-        <span class="video-status ${video.status}">${translateStatus(video.status)}</span>
-        <div class="video-actions">
-          ${video.status === 'pending' || video.status === 'failed' ? 
-            `<button class="btn btn-sm btn-primary" onclick="openTranscricaoModal('${video.id}')">📝 Transcrever</button>` : 
-            `<button class="btn btn-sm btn-success" onclick="openEditor('${video.id}')">✏️ Editar</button>`
-          }
-          <button class="btn btn-sm btn-danger" onclick="deleteVideo('${video.id}')">🗑️</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ============================================
-// Modal de Transcrição
-// ============================================
-
-function initModals() {
-  const modal = document.getElementById('transcricaoModal');
-  const closeBtn = document.getElementById('closeTranscricaoModal');
-  const cancelBtn = document.getElementById('cancelTranscricao');
-  const startBtn = document.getElementById('startTranscricao');
-  
-  closeBtn.addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
-  
-  cancelBtn.addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
-  
-  startBtn.addEventListener('click', startTranscricao);
-}
-
-function openTranscricaoModal(videoId) {
-  document.getElementById('videoIdInput').value = videoId;
-  document.getElementById('transcricaoModal').classList.add('active');
-}
-
-async function startTranscricao() {
-  const videoId = document.getElementById('videoIdInput').value;
-  const engine = document.getElementById('engineSelect').value;
-  const model = document.getElementById('modelSelect').value;
-  const device = document.getElementById('deviceSelect').value;
-  const language = document.getElementById('languageSelect').value;
-  
-  try {
-    const response = await fetch(`/api/transcricoes/${videoId}/iniciar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ engine, model, device, language })
-    });
-    
-    const result = await response.json();
-    
-    if (response.ok && result.success) {
-      showToast('Transcrição iniciada!', 'success');
-      document.getElementById('transcricaoModal').classList.remove('active');
-      
-      // Navegar para página de processamento
-      openProcessamento(videoId, { engine, model, device, language });
-    } else {
-      showToast(result.error || 'Erro ao iniciar transcrição', 'error');
-    }
-  } catch (error) {
-    console.error('Erro:', error);
-    showToast('Erro ao iniciar transcrição', 'error');
-  }
-}
-
-// ============================================
-// Página de Processamento
-// ============================================
-
-let currentProcessingVideoId = null;
-
-function openProcessamento(videoId, options) {
-  currentProcessingVideoId = videoId;
-  
-  // Atualizar informações na UI
-  document.getElementById('processingEngine').textContent = options.engine;
-  document.getElementById('processingModel').textContent = options.model;
-  document.getElementById('processingDevice').textContent = device === 'cuda' ? 'GPU (CUDA)' : 'CPU';
-  document.getElementById('processingStatus').textContent = 'Iniciando...';
-  document.getElementById('processingPercent').textContent = '0%';
-  document.getElementById('progressFill').style.width = '0%';
-  document.getElementById('processingLog').innerHTML = '';
-  document.getElementById('btnOpenEditor').style.display = 'none';
-  
-  // Carregar nome do vídeo
-  fetch(`/api/videos/${videoId}`)
-    .then(res => res.json())
-    .then(result => {
-      if (result.success) {
-        document.getElementById('processingVideoName').textContent = result.data.original_name;
-      }
-    });
-  
-  // Navegar para página de processamento
-  document.querySelector('[data-page="processamento"]').click();
-  
-  // Iniciar polling de status
-  pollTranscricaoStatus(videoId);
-}
-
-function pollTranscricaoStatus(videoId) {
-  // Buscar transcrição associada ao vídeo
-  fetch('/api/transcricoes?limit=1')
-    .then(res => res.json())
-    .then(result => {
-      if (result.success && result.data.length > 0) {
-        const transcricao = result.data.find(t => t.video_id === videoId);
-        
-        if (transcricao) {
-          updateProcessamentoUI(transcricao);
-          
-          // Continuar polling se ainda estiver processando
-          if (transcricao.status === 'processing' || transcricao.status === 'pending') {
-            setTimeout(() => pollTranscricaoStatus(videoId), 2000);
-          } else if (transcricao.status === 'completed') {
-            // Mostrar botão de abrir editor
-            document.getElementById('btnOpenEditor').style.display = 'inline-block';
-            document.getElementById('btnOpenEditor').onclick = () => openEditor(videoId);
-            addLogEntry('✅ Transcrição concluída com sucesso!');
-          } else if (transcricao.status === 'failed') {
-            addLogEntry('❌ Erro no processamento');
-          }
-        }
-      }
-    })
-    .catch(err => {
-      console.error('Erro ao poll status:', err);
-      setTimeout(() => pollTranscricaoStatus(videoId), 3000);
-    });
-}
-
-function updateProcessamentoUI(transcricao) {
-  const statusEl = document.getElementById('processingStatus');
-  const percentEl = document.getElementById('processingPercent');
-  const fillEl = document.getElementById('progressFill');
-  
-  const statusText = {
-    'pending': 'Aguardando...',
-    'processing': 'Processando...',
-    'completed': 'Concluído',
-    'failed': 'Falhou'
-  };
-  
-  statusEl.textContent = statusText[transcricao.status] || transcricao.status;
-  percentEl.textContent = `${Math.round(transcricao.progress || 0)}%`;
-  fillEl.style.width = `${transcricao.progress || 0}%`;
-  
-  // Mudar cor baseado no status
-  if (transcricao.status === 'completed') {
-    fillEl.style.background = 'var(--success)';
-  } else if (transcricao.status === 'failed') {
-    fillEl.style.background = 'var(--danger)';
-  } else {
-    fillEl.style.background = 'var(--accent-primary)';
-  }
-}
-
-function addLogEntry(message) {
-  const logEl = document.getElementById('processingLog');
-  const timestamp = new Date().toLocaleTimeString('pt-BR');
-  const entry = document.createElement('div');
-  entry.className = 'log-entry';
-  entry.textContent = `[${timestamp}] ${message}`;
-  logEl.appendChild(entry);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-
-// ============================================
-// Editor
-// ============================================
-
-function initEditor() {
-  const videoPlayer = document.getElementById('videoPlayer');
-  
-  // Atualizar tempo atual
-  videoPlayer.addEventListener('timeupdate', () => {
-    document.getElementById('currentTime').textContent = formatTime(videoPlayer.currentTime);
-    highlightCurrentSubtitle(videoPlayer.currentTime);
-  });
-  
-  // Atualizar tempo total
-  videoPlayer.addEventListener('loadedmetadata', () => {
-    document.getElementById('totalTime').textContent = formatTime(videoPlayer.duration);
-  });
-  
-  // Play/Pause button
-  document.getElementById('playPauseBtn').addEventListener('click', () => {
-    if (videoPlayer.paused) {
-      videoPlayer.play();
-      document.getElementById('playPauseBtn').textContent = '⏸️ Pause';
-    } else {
-      videoPlayer.pause();
-      document.getElementById('playPauseBtn').textContent = '▶️ Play';
-    }
-  });
-  
-  // Zoom controls
-  document.getElementById('zoomIn').addEventListener('click', () => {
-    state.zoom = Math.min(state.zoom + 0.1, 2);
-    renderTimeline();
-  });
-  
-  document.getElementById('zoomOut').addEventListener('click', () => {
-    state.zoom = Math.max(state.zoom - 0.1, 0.5);
-    renderTimeline();
-  });
-  
-  // Export subtitle
-  document.getElementById('exportSubtitle').addEventListener('click', exportSubtitle);
-}
-
-async function openEditor(videoId) {
-  try {
-    const response = await fetch(`/api/videos/${videoId}`);
-    const result = await response.json();
-    
-    if (result.success) {
-      state.currentVideo = result.data;
-      
-      // Carregar vídeo no player
-      const videoPlayer = document.getElementById('videoPlayer');
-      videoPlayer.src = `/uploads/${result.data.filename}`;
-      
-      // Carregar transcrição
-      await loadTranscricao(result.data.transcricao_id);
-      
-      // Navegar para página do editor
-      document.querySelector('[data-page="editor"]').click();
-      
-      showToast('Editor carregado!', 'success');
-    }
-  } catch (error) {
-    console.error('Erro ao abrir editor:', error);
-    showToast('Erro ao abrir editor', 'error');
-  }
-}
-
-async function loadTranscricao(transcricaoId) {
-  try {
-    const response = await fetch(`/api/transcricoes/${transcricaoId}`);
-    const result = await response.json();
-    
-    if (result.success) {
-      state.currentTranscricao = result.data;
-      state.segmentos = result.data.segmentos || [];
-      
-      renderSubtitles();
-      renderTimeline();
-    }
-  } catch (error) {
-    console.error('Erro ao carregar transcrição:', error);
-  }
-}
-
-function renderSubtitles() {
-  const list = document.getElementById('subtitlesList');
-  
-  if (state.segmentos.length === 0) {
-    list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">Nenhuma legenda encontrada.</p>';
-    return;
-  }
-  
-  list.innerHTML = state.segmentos.map((seg, index) => `
-    <div class="subtitle-item" data-index="${index}">
-      <div class="subtitle-time">
-        <input type="text" value="${formatTime(seg.start_time)}" onchange="updateSegmentTime(${index}, 'start', this.value)" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 4px; border-radius: 4px;">
-        <span> → </span>
-        <input type="text" value="${formatTime(seg.end_time)}" onchange="updateSegmentTime(${index}, 'end', this.value)" style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 4px; border-radius: 4px;">
-      </div>
-      <textarea class="subtitle-text" onchange="updateSegmentText(${index}, this.value)">${escapeHtml(seg.text)}</textarea>
-      <div class="subtitle-actions">
-        <button class="btn btn-sm btn-danger" onclick="deleteSegment(${index})">🗑️</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderTimeline() {
-  const container = document.getElementById('timelineContainer');
-  
-  if (state.segmentos.length === 0) {
-    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">Nenhum segmento na timeline</p>';
-    return;
-  }
-  
-  const totalWidth = 100 * state.zoom;
-  
-  container.innerHTML = `
-    <div style="position: relative; width: ${totalWidth}%; min-height: 60px; background: var(--bg-tertiary); border-radius: 4px;">
-      ${state.segmentos.map((seg, index) => {
-        const left = (seg.start_time / 60) * 100 * state.zoom;
-        const width = ((seg.end_time - seg.start_time) / 60) * 100 * state.zoom;
-        
-        return `
-          <div style="position: absolute; left: ${left}%; width: ${width}%; height: 40px; background: var(--accent-primary); border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; color: #000; overflow: hidden; white-space: nowrap; cursor: pointer;" 
-               onclick="seekTo(${seg.start_time})"
-               title="${escapeHtml(seg.text)}">
-            ${escapeHtml(seg.text.substring(0, 30))}${seg.text.length > 30 ? '...' : ''}
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-}
-
-function highlightCurrentSubtitle(currentTime) {
-  state.segmentos.forEach((seg, index) => {
-    if (currentTime >= seg.start_time && currentTime <= seg.end_time) {
-      const el = document.querySelector(`.subtitle-item[data-index="${index}"]`);
-      if (el) {
-        el.style.outline = '2px solid var(--accent-primary)';
-      }
-    } else {
-      const el = document.querySelector(`.subtitle-item[data-index="${index}"]`);
-      if (el) {
-        el.style.outline = 'none';
-      }
-    }
-  });
-}
-
-function seekTo(time) {
-  const videoPlayer = document.getElementById('videoPlayer');
-  videoPlayer.currentTime = time;
-}
-
-function updateSegmentText(index, text) {
-  state.segmentos[index].text = text;
-  renderTimeline();
-}
-
-function updateSegmentTime(index, type, value) {
-  const seconds = parseTime(value);
-  if (type === 'start') {
-    state.segmentos[index].start_time = seconds;
-  } else {
-    state.segmentos[index].end_time = seconds;
-  }
-  renderTimeline();
-}
-
-function deleteSegment(index) {
-  if (confirm('Tem certeza que deseja deletar esta legenda?')) {
-    state.segmentos.splice(index, 1);
-    renderSubtitles();
-    renderTimeline();
-  }
-}
-
-async function exportSubtitle() {
-  if (!state.currentTranscricao) {
-    showToast('Nenhuma transcrição para exportar', 'error');
-    return;
-  }
-  
-  const formatos = ['srt', 'vtt', 'txt', 'json', 'ass'];
-  const formato = prompt(`Formatos disponíveis: ${formatos.join(', ')}\nDigite o formato desejado:`, 'srt');
-  
-  if (formato && formatos.includes(formato.toLowerCase())) {
-    window.open(`/api/export/${state.currentTranscricao.id}/${formato.toLowerCase()}`, '_blank');
-    showToast(`Exportando em ${formato.toUpperCase()}...`, 'success');
-  } else if (formato) {
-    showToast('Formato inválido', 'error');
-  }
-}
-
-// ============================================
-// Histórico
-// ============================================
-
-async function loadHistorico() {
-  try {
-    const response = await fetch('/api/transcricoes?limit=50&offset=0');
-    const result = await response.json();
-    
-    if (result.success) {
-      renderHistorico(result.data);
-    }
-  } catch (error) {
-    console.error('Erro ao carregar histórico:', error);
-  }
-}
-
-function renderHistorico(transcricoes) {
-  const tbody = document.querySelector('#historicoTable tbody');
-  
-  if (transcricoes.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">Nenhuma transcrição encontrada</td></tr>';
-    return;
-  }
-  
-  tbody.innerHTML = transcricoes.map(t => `
-    <tr>
-      <td>${new Date(t.created_at).toLocaleDateString('pt-BR')}</td>
-      <td>${t.original_name || 'N/A'}</td>
-      <td>${t.engine}</td>
-      <td><span class="video-status ${t.status}">${translateStatus(t.status)}</span></td>
-      <td>${Math.round(t.progress)}%</td>
-      <td>
-        <button class="btn btn-sm btn-success" onclick="openEditorFromHistorico('${t.video_id}')">✏️</button>
-        <button class="btn btn-sm btn-primary" onclick="downloadSRT('${t.id}')">💾</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-// ============================================
-// Configurações
-// ============================================
-
-async function loadConfiguracoes() {
-  try {
-    const response = await fetch('/api/config');
-    const result = await response.json();
-    
-    if (result.success) {
-      renderConfiguracoes(result.data);
-    }
-  } catch (error) {
-    console.error('Erro ao carregar configurações:', error);
-  }
-}
-
-function renderConfiguracoes(configs) {
-  const grid = document.getElementById('settingsGrid');
-  
-  grid.innerHTML = configs.map(config => `
-    <div class="setting-card">
-      <h3>${config.key.replace(/_/g, ' ').toUpperCase()}</h3>
-      <p style="color: var(--text-secondary); margin-bottom: 1rem;">${config.description || ''}</p>
-      <div class="form-group">
-        <input type="text" value="${config.value}" onchange="updateConfig('${config.key}', this.value)">
-      </div>
-    </div>
-  `).join('');
-}
-
-async function updateConfig(key, value) {
-  try {
-    await fetch(`/api/config/${key}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value })
-    });
-    showToast('Configuração atualizada!', 'success');
-  } catch (error) {
-    showToast('Erro ao atualizar configuração', 'error');
-  }
-}
-
-// ============================================
-// Utilitários
-// ============================================
-
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.textContent = message;
-  
-  container.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.animation = 'slideIn 0.3s ease reverse';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-function formatTime(seconds) {
-  const date = new Date(0);
-  date.setMilliseconds(seconds * 1000);
-  return date.toISOString().substr(11, 8);
-}
-
-function parseTime(timeStr) {
-  const parts = timeStr.split(':').map(parseFloat);
-  if (parts.length === 3) {
-    return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  }
-  return 0;
-}
-
-function translateStatus(status) {
-  const statuses = {
-    pending: 'Pendente',
-    processing: 'Processando',
-    completed: 'Completo',
-    failed: 'Falhou'
-  };
-  return statuses[status] || status;
-}
-
-async function deleteVideo(videoId) {
-  if (confirm('Tem certeza que deseja deletar este vídeo? Esta ação não pode ser desfeita.')) {
-    try {
-      await fetch(`/api/videos/${videoId}`, { method: 'DELETE' });
-      showToast('Vídeo deletado!', 'success');
-      loadVideos();
-    } catch (error) {
-      showToast('Erro ao deletar vídeo', 'error');
-    }
-  }
-}
-
-function openEditorFromHistorico(videoId) {
-  openEditor(videoId);
-}
-
-function downloadSRT(transcricaoId) {
-  window.open(`/api/export/${transcricaoId}/srt`, '_blank');
-}
+export { App };

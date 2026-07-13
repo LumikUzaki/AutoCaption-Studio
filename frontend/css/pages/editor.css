@@ -1,0 +1,12 @@
+/* ===================================
+   PÁGINA DO EDITOR
+   =================================== */
+
+.page--editor .page__header {
+    display: none;
+}
+
+.editor-page {
+    height: calc(100vh - var(--header-height));
+    overflow-y: auto;
+}
