@@ -1,69 +1,46 @@
-```
-# Database
-database/*.db
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+dist/
+build/
+target/
 
 # Dependencies
 node_modules/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
 venv/
 .venv/
-.venv.bak/
-pip-log.txt
-pip-selfcheck.json
-
-# Environment variables
 .env
 .env.local
 .env.*
 
-# Logs
+# Logs and temp files
 *.log
-
-# Coverage reports
-coverage/
-*.cover
-.hypothesis/
-
-# Temporary files
 *.tmp
-*.temp
-*~
-.DS_Store
-Thumbs.db
-
-# Build outputs
-dist/
-build/
-*.out
-*.exe
-*.dll
-*.so
-*.dylib
+*.swp
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
+
+# Python specific
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# MyPy cache
+.mypy_cache/
+.pytest_cache/
 
 # OS generated files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-backend/uploads/7302c984-c25b-4cd5-8b1c-fa6f6962b41f.mp4
-backend/uploads/46881eff-c0e7-49bc-bd7c-e35939f8e551.mp3
-
-=======
-```
->>>>>>> d02e20503849989b3982982fe529a06931a4c50c
