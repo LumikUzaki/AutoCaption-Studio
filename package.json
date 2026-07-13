@@ -1,0 +1,35 @@
+{
+  "name": "legendas-pro",
+  "version": "1.0.0",
+  "description": "Sistema profissional de transcrição, edição, tradução, exportação e renderização de legendas para vídeo",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev": "nodemon backend/src/server.js",
+    "init:db": "node backend/src/database/init.js"
+  },
+  "keywords": [
+    "legendas",
+    "transcrição",
+    "whisper",
+    "vídeo",
+    "offline",
+    "legendagem"
+  ],
+  "author": "Legendas Pro Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "better-sqlite3": "^9.2.2",
+    "multer": "^1.4.5-lts.1",
+    "bull": "^4.12.0",
+    "ioredis": "^5.3.2",
+    "uuid": "^9.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
