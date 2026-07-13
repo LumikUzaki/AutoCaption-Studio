@@ -258,7 +258,9 @@ async function startTranscricao() {
     if (response.ok && result.success) {
       showToast('Transcrição iniciada!', 'success');
       document.getElementById('transcricaoModal').classList.remove('active');
-      loadVideos();
+      
+      // Navegar para página de processamento
+      openProcessamento(videoId, { engine, model, device, language });
     } else {
       showToast(result.error || 'Erro ao iniciar transcrição', 'error');
     }
@@ -266,6 +268,108 @@ async function startTranscricao() {
     console.error('Erro:', error);
     showToast('Erro ao iniciar transcrição', 'error');
   }
+}
+
+// ============================================
+// Página de Processamento
+// ============================================
+
+let currentProcessingVideoId = null;
+
+function openProcessamento(videoId, options) {
+  currentProcessingVideoId = videoId;
+  
+  // Atualizar informações na UI
+  document.getElementById('processingEngine').textContent = options.engine;
+  document.getElementById('processingModel').textContent = options.model;
+  document.getElementById('processingDevice').textContent = device === 'cuda' ? 'GPU (CUDA)' : 'CPU';
+  document.getElementById('processingStatus').textContent = 'Iniciando...';
+  document.getElementById('processingPercent').textContent = '0%';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('processingLog').innerHTML = '';
+  document.getElementById('btnOpenEditor').style.display = 'none';
+  
+  // Carregar nome do vídeo
+  fetch(`/api/videos/${videoId}`)
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) {
+        document.getElementById('processingVideoName').textContent = result.data.original_name;
+      }
+    });
+  
+  // Navegar para página de processamento
+  document.querySelector('[data-page="processamento"]').click();
+  
+  // Iniciar polling de status
+  pollTranscricaoStatus(videoId);
+}
+
+function pollTranscricaoStatus(videoId) {
+  // Buscar transcrição associada ao vídeo
+  fetch('/api/transcricoes?limit=1')
+    .then(res => res.json())
+    .then(result => {
+      if (result.success && result.data.length > 0) {
+        const transcricao = result.data.find(t => t.video_id === videoId);
+        
+        if (transcricao) {
+          updateProcessamentoUI(transcricao);
+          
+          // Continuar polling se ainda estiver processando
+          if (transcricao.status === 'processing' || transcricao.status === 'pending') {
+            setTimeout(() => pollTranscricaoStatus(videoId), 2000);
+          } else if (transcricao.status === 'completed') {
+            // Mostrar botão de abrir editor
+            document.getElementById('btnOpenEditor').style.display = 'inline-block';
+            document.getElementById('btnOpenEditor').onclick = () => openEditor(videoId);
+            addLogEntry('✅ Transcrição concluída com sucesso!');
+          } else if (transcricao.status === 'failed') {
+            addLogEntry('❌ Erro no processamento');
+          }
+        }
+      }
+    })
+    .catch(err => {
+      console.error('Erro ao poll status:', err);
+      setTimeout(() => pollTranscricaoStatus(videoId), 3000);
+    });
+}
+
+function updateProcessamentoUI(transcricao) {
+  const statusEl = document.getElementById('processingStatus');
+  const percentEl = document.getElementById('processingPercent');
+  const fillEl = document.getElementById('progressFill');
+  
+  const statusText = {
+    'pending': 'Aguardando...',
+    'processing': 'Processando...',
+    'completed': 'Concluído',
+    'failed': 'Falhou'
+  };
+  
+  statusEl.textContent = statusText[transcricao.status] || transcricao.status;
+  percentEl.textContent = `${Math.round(transcricao.progress || 0)}%`;
+  fillEl.style.width = `${transcricao.progress || 0}%`;
+  
+  // Mudar cor baseado no status
+  if (transcricao.status === 'completed') {
+    fillEl.style.background = 'var(--success)';
+  } else if (transcricao.status === 'failed') {
+    fillEl.style.background = 'var(--danger)';
+  } else {
+    fillEl.style.background = 'var(--accent-primary)';
+  }
+}
+
+function addLogEntry(message) {
+  const logEl = document.getElementById('processingLog');
+  const timestamp = new Date().toLocaleTimeString('pt-BR');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.textContent = `[${timestamp}] ${message}`;
+  logEl.appendChild(entry);
+  logEl.scrollTop = logEl.scrollHeight;
 }
 
 // ============================================

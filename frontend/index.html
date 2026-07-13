@@ -14,6 +14,7 @@
     </div>
     <nav class="header-nav">
       <a href="#dashboard" class="nav-link active" data-page="dashboard">Dashboard</a>
+      <a href="#processamento" class="nav-link" data-page="processamento">Processamento</a>
       <a href="#editor" class="nav-link" data-page="editor">Editor</a>
       <a href="#historico" class="nav-link" data-page="historico">Histórico</a>
       <a href="#configuracoes" class="nav-link" data-page="configuracoes">Configurações</a>
@@ -96,6 +97,55 @@
           </div>
           <div class="subtitles-list" id="subtitlesList">
             <!-- Lista de legendas -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Página: Processamento -->
+    <section id="processamento" class="page">
+      <div class="page-header">
+        <h2>Processamento</h2>
+        <p>Acompanhe o progresso da transcrição</p>
+      </div>
+      
+      <div class="processing-container" id="processingContainer">
+        <div class="processing-card">
+          <div class="processing-icon">🎬</div>
+          <h3 id="processingVideoName">Carregando...</h3>
+          
+          <div class="progress-section">
+            <div class="progress-info">
+              <span id="processingStatus">Aguardando...</span>
+              <span id="processingPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+          
+          <div class="processing-details">
+            <div class="detail-item">
+              <span class="detail-label">Engine:</span>
+              <span class="detail-value" id="processingEngine">-</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Modelo:</span>
+              <span class="detail-value" id="processingModel">-</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Dispositivo:</span>
+              <span class="detail-value" id="processingDevice">-</span>
+            </div>
+          </div>
+          
+          <div class="processing-log" id="processingLog">
+            <!-- Logs em tempo real -->
+          </div>
+          
+          <div class="processing-actions">
+            <button class="btn btn-secondary" onclick="location.href='#dashboard'">⬅️ Voltar</button>
+            <button class="btn btn-success" id="btnOpenEditor" style="display: none;">✏️ Abrir Editor</button>
           </div>
         </div>
       </div>

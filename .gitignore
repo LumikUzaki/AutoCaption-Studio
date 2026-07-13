@@ -1,67 +1,64 @@
 ```
+# Database
+database/*.db
+
 # Dependencies
 node_modules/
 
-# Environment variables
-.env
-.env.local
-.env.
-
-# Database file
-backend/src/database/legendas_pro.db
-
-# Logs
-*.log
-
-# Build outputs (if any JS/CSS get built)
-dist/
-build/
-coverage/
-htmlcov/
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Python cache (if Python is used alongside Node.js)
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.Python
+env/
+venv/
+.venv/
+.venv.bak/
+pip-log.txt
+pip-selfcheck.json
 
-# IDE specific
-.vscode/
-.idea/
+# Environment variables
+.env
+.env.local
+.env.*
 
-# Processed files
+# Logs
+*.log
+
+# Coverage reports
+coverage/
+*.cover
+.hypothesis/
+
+# Temporary files
 *.tmp
 *.temp
+*~
+.DS_Store
+Thumbs.db
 
-# Package lock
-package-lock.json
+# Build outputs
+dist/
+build/
+*.out
+*.exe
+*.dll
+*.so
+*.dylib
 
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
 
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 ```
