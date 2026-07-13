@@ -1,5 +1,9 @@
 const { transcricao: transcricaoModel, segmento: segmentoModel } = require('../models/transcricao.model');
 const videoModel = require('../models/video.model');
+const pythonBridge = require('../services/python-bridge.service');
+const ffmpegService = require('../services/ffmpeg.service');
+const path = require('path');
+const fs = require('fs');
 
 class TranscricaoController {
   // Iniciar transcrição
@@ -24,7 +28,87 @@ class TranscricaoController {
       language: options.language || 'pt'
     };
     
-    return transcricaoModel.create(transcricaoData);
+    // Criar registro de transcrição
+    const transcricao = transcricaoModel.create(transcricaoData);
+    
+    // Iniciar processamento em background
+    this.processarTranscricao(transcricao.id, video, transcricaoData);
+    
+    return transcricao;
+  }
+  
+  /**
+   * Processa transcrição em background
+   */
+  async processarTranscricao(transcricaoId, video, options) {
+    try {
+      console.log(`\n🎯 [TRANSCRIÇÃO] Iniciando processamento para ID: ${transcricaoId}`);
+      
+      // Atualizar status para processing
+      transcricaoModel.updateStatus(transcricaoId, 'processing', 10);
+      
+      // Caminho do vídeo
+      const videoPath = path.join(__dirname, '../../uploads', video.filename);
+      
+      // Validar arquivo
+      if (!fs.existsSync(videoPath)) {
+        throw new Error(`Arquivo de vídeo não encontrado: ${videoPath}`);
+      }
+      
+      console.log(`[TRANSCRIÇÃO] Vídeo: ${videoPath}`);
+      console.log(`[TRANSCRIÇÃO] Engine: ${options.engine}`);
+      
+      // Converter para WAV usando FFmpeg
+      transcricaoModel.updateStatus(transcricaoId, 'processing', 20);
+      console.log(`[TRANSCRIÇÃO] Convertendo áudio para WAV...`);
+      
+      const wavPath = await ffmpegService.convertToWav(videoPath, transcricaoId);
+      console.log(`[TRANSCRIÇÃO] WAV gerado: ${wavPath}`);
+      
+      // Executar transcrição com Python
+      transcricaoModel.updateStatus(transcricaoId, 'processing', 30);
+      console.log(`[TRANSCRIÇÃO] Iniciando transcrição com Python...`);
+      
+      const resultado = await pythonBridge.transcribe({
+        transcricaoId,
+        videoPath: wavPath,
+        engine: options.engine,
+        model: options.model,
+        device: options.device,
+        language: options.language
+      });
+      
+      console.log(`[TRANSCRIÇÃO] Transcrição concluída! Segmentos: ${resultado.total_segmentos || 0}`);
+      
+      // Salvar segmentos no banco
+      if (resultado.segmentos && resultado.segmentos.length > 0) {
+        transcricaoModel.updateStatus(transcricaoId, 'processing', 90);
+        
+        resultado.segmentos.forEach((seg, index) => {
+          segmentoModel.create({
+            transcricaoId,
+            start_time: seg.start_time,
+            end_time: seg.end_time,
+            text: seg.text,
+            confidence: seg.confidence,
+            position: index
+          });
+        });
+        
+        console.log(`[TRANSCRIÇÃO] ${resultado.segmentos.length} segmentos salvos no banco`);
+      }
+      
+      // Atualizar status para completed
+      transcricaoModel.updateStatus(transcricaoId, 'completed', 100);
+      videoModel.updateStatus(video.id, 'completed');
+      
+      console.log(`✅ [TRANSCRIÇÃO] Processo concluído com sucesso!`);
+      
+    } catch (error) {
+      console.error(`❌ [TRANSCRIÇÃO] Erro no processamento:`, error.message);
+      transcricaoModel.updateStatus(transcricaoId, 'failed', 0);
+      videoModel.updateStatus(video.id, 'failed');
+    }
   }
   
   // Obter todas as transcrições
