@@ -6,6 +6,16 @@ import sys
 import json
 from faster_whisper import WhisperModel
 
+# Cache de modelos para evitar recarregamento
+_model_cache = {}
+
+def get_model(model_name, device, compute_type):
+    """Retorna modelo em cache ou carrega novo."""
+    cache_key = f"{model_name}_{device}_{compute_type}"
+    if cache_key not in _model_cache:
+        _model_cache[cache_key] = WhisperModel(model_name, device=device, compute_type=compute_type)
+    return _model_cache[cache_key]
+
 def transcribe(audio_path, model_name, device, language=None):
     """
     Transcreve áudio usando faster-whisper.
@@ -20,15 +30,22 @@ def transcribe(audio_path, model_name, device, language=None):
         JSON com segmentos de transcrição
     """
     try:
-        # Carregar modelo
+        # Carregar modelo com cache
         compute_type = "float16" if device == "cuda" else "int8"
-        model = WhisperModel(model_name, device=device, compute_type=compute_type)
+        model = get_model(model_name, device, compute_type)
         
+        # Otimizações de performance
         segments, info = model.transcribe(
             audio_path,
             language=language,
             vad_filter=True,  # Filtrar silêncio
-            word_timestamps=False  # Faster-whisper padrão não tem word-level preciso
+            vad_parameters=dict(min_silence_duration_ms=500),
+            word_timestamps=False,
+            beam_size=1,  # Reduz beam search para velocidade
+            best_of=1,
+            temperature=0.0,  # Temperatura fixa para consistência
+            compression_ratio_threshold=2.4,
+            log_prob_threshold=-1.0
         )
         
         result_segments = []
@@ -37,7 +54,7 @@ def transcribe(audio_path, model_name, device, language=None):
                 "start": segment.start,
                 "end": segment.end,
                 "text": segment.text.strip(),
-                "words": []  # Faster-whisper básico não retorna words detalhadas
+                "words": []
             })
         
         return {
