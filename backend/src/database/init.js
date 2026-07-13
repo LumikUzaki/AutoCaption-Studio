@@ -105,9 +105,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_transcricoes_video_id ON transcricoes(video_id);
   CREATE INDEX IF NOT EXISTS idx_transcricoes_status ON transcricoes(status);
   CREATE INDEX IF NOT EXISTS idx_segmentos_transcricao_id ON segmentos(transcricao_id);
-  CREATE INDEX IF NOT EXISTS idx_segmentos_position ON segmentos(transcricao_id, position);
-  CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
-  CREATE INDEX IF NOT EXISTS idx_jobs_video_id ON jobs(video_id);
   CREATE INDEX IF NOT EXISTS idx_historico_created_at ON historico(created_at);
 `);
 
