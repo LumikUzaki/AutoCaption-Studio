@@ -20,12 +20,12 @@ class SubtitleService {
     }
 
     /**
-     * Converte segmentos JSON para formato VTT.
+     * Converte segmentos JSON para formato VTT otimizado.
      * @param {Array} segments - Array de objetos { start, end, text }.
      * @returns {string} Conteúdo no formato VTT.
      */
     toVTT(segments) {
-        let vtt = 'WEBVTT\n\n';
+        let vtt = 'WEBVTT\nKind: captions\nLanguage: pt-BR\n\n';
         vtt += segments.map((seg, index) => {
             const startTime = this.formatTimeVTT(seg.start);
             const endTime = this.formatTimeVTT(seg.end);
@@ -59,7 +59,7 @@ class SubtitleService {
     }
 
     /**
-     * Salva segmentos de legenda no banco de dados.
+     * Salva segmentos de legenda no banco de dados com transação otimizada.
      * @param {number} jobId - ID do job.
      * @param {Array} segments - Array de segmentos.
      */
@@ -70,6 +70,9 @@ class SubtitleService {
         `);
 
         const transaction = db.transaction((segments) => {
+            // Deleta segmentos existentes primeiro
+            db.prepare('DELETE FROM segments WHERE job_id = ?').run(jobId);
+            
             for (const seg of segments) {
                 const wordsJson = seg.words ? JSON.stringify(seg.words) : null;
                 insertSegment.run(jobId, seg.start, seg.end, seg.text, wordsJson);
@@ -97,6 +100,28 @@ class SubtitleService {
             ...row,
             words: row.words ? JSON.parse(row.words) : null
         }));
+    }
+
+    /**
+     * Atualiza múltiplos segmentos de uma vez (bulk update).
+     * @param {number} jobId - ID do job.
+     * @param {Array} segments - Array de segmentos atualizados.
+     */
+    atualizarSegmentosBulk(jobId, segments) {
+        const updateStmt = db.prepare(`
+            UPDATE segments 
+            SET start_time = ?, end_time = ?, text = ?, words = ?, atualizado_em = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `);
+
+        const transaction = db.transaction((segments) => {
+            for (const seg of segments) {
+                const wordsJson = seg.words ? JSON.stringify(seg.words) : null;
+                updateStmt.run(seg.start, seg.end, seg.text, wordsJson, seg.id);
+            }
+        });
+
+        transaction(segments);
     }
 
     /**
@@ -135,6 +160,39 @@ class SubtitleService {
         `);
 
         stmt.run(...values);
+    }
+
+    /**
+     * Exporta legendas para arquivo físico.
+     * @param {number} jobId - ID do job.
+     * @param {string} format - Formato de exportação (srt, vtt, txt, json).
+     * @param {string} outputPath - Caminho de saída do arquivo.
+     * @returns {string} Caminho do arquivo gerado.
+     */
+    exportToFile(jobId, format, outputPath) {
+        const segments = this.obterSegmentos(jobId);
+        let content = '';
+
+        switch (format.toLowerCase()) {
+            case 'srt':
+                content = this.toSRT(segments);
+                break;
+            case 'vtt':
+                content = this.toVTT(segments);
+                break;
+            case 'txt':
+                content = segments.map(s => s.text).join('\n\n');
+                break;
+            case 'json':
+                content = JSON.stringify(segments, null, 2);
+                break;
+            default:
+                throw new Error(`Formato não suportado: ${format}`);
+        }
+
+        const fs = require('fs');
+        fs.writeFileSync(outputPath, content, 'utf-8');
+        return outputPath;
     }
 }
 
