@@ -1,64 +1,30 @@
 ```
-# Database
-database/*.db
+# Database files
+*.db
 
-# Dependencies
-node_modules/
+# Logs and temp files
+*.log
+*.tmp
+*.swp
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-.venv.bak/
-pip-log.txt
-pip-selfcheck.json
-
-# Environment variables
+# Environment
 .env
 .env.local
-.env.*
-
-# Logs
-*.log
-
-# Coverage reports
-coverage/
-*.cover
-.hypothesis/
-
-# Temporary files
-*.tmp
-*.temp
-*~
-.DS_Store
-Thumbs.db
-
-# Build outputs
-dist/
-build/
-*.out
-*.exe
-*.dll
-*.so
-*.dylib
+*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Build artifacts
+dist/
+build/
+target/
 ```
