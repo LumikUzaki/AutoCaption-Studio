@@ -5,16 +5,18 @@ node_modules/
 # Environment variables
 .env
 .env.local
-*.env.*
+.env.*
 
 # Logs
 *.log
 
+# Temporary files
+*.tmp
+*.swp
+
 # IDE files
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # Build artifacts
 dist/
@@ -27,44 +29,17 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Temporary files
-*.tmp
-*.temp
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
 # Coverage reports
 coverage/
 htmlcov/
 .coverage
 
-# Test caches
-.pytest_cache/
-.mypy_cache/
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# OS generated files
+.DS_Store
+Thumbs.db
 ```
