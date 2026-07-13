@@ -10,7 +10,7 @@ const { initDatabase } = require('./models/database');
 const setupSocketIO = require('./sockets/progress.socket');
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
+const HOST = 'localhost';
 
 // Cria o servidor HTTP
 const server = http.createServer(appModule.app);

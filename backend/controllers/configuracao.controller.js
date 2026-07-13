@@ -1,4 +1,4 @@
-const db = require('../models/database');
+const { db } = require('../models/database');
 
 /**
  * Controller de Configurações

@@ -65,7 +65,9 @@ function initDatabase() {
 }
 
 // Exporta a instância do banco e a função de inicialização
+// A instância 'db' já possui o método prepare() nativo do better-sqlite3
 module.exports = {
   db,
-  initDatabase
+  initDatabase,
+  getDb: () => db
 };
