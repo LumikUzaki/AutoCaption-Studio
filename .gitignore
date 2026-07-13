@@ -2,20 +2,15 @@
 # Dependencies
 node_modules/
 
-# Database
-legendas.db
+# Logs and temp files
+*.log
+*.tmp
+*.swp
 
 # Environment
 .env
 .env.local
 *.env.*
-
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.swp
 
 # Editors
 .vscode/
@@ -26,13 +21,23 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Build outputs
-dist/
-build/
-target/
-
-# OS
+.Python
+venv/
+.venv/
+.env
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
 .DS_Store
 Thumbs.db
 ```
