@@ -53,7 +53,6 @@ build/
 *.swp
 *.swo
 
-<<<<<<< Updated upstream
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -62,9 +61,9 @@ build/
 .Trashes
 ehthumbs.db
 Thumbs.db
-```
-=======
-```
 backend/uploads/7302c984-c25b-4cd5-8b1c-fa6f6962b41f.mp4
 backend/uploads/46881eff-c0e7-49bc-bd7c-e35939f8e551.mp3
->>>>>>> Stashed changes
+
+=======
+```
+>>>>>>> d02e20503849989b3982982fe529a06931a4c50c
