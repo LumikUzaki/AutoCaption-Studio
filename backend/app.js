@@ -9,7 +9,7 @@ const routes = require('./routes');
 
 // Importação de Serviços e Configuração
 const { initDatabase } = require('./models/database');
-const { startQueueProcessor } = require('./services/queue');
+const queueService = require('./services/queue');
 const setupSocketIO = require('./sockets/progress.socket');
 
 // Inicialização do Express

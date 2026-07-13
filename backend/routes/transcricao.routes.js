@@ -40,15 +40,12 @@ const upload = multer({
 });
 
 // POST /api/transcricao/iniciar - Inicia uma nova transcrição (upload + processamento)
-router.post('/iniciar', upload.single('video'), transcricaoController.iniciarTranscricao);
+router.post('/iniciar', upload.single('video'), transcricaoController.createTranscription);
 
 // GET /api/transcricao/:id - Obtém dados completos de uma transcrição para edição
-router.get('/:id', transcricaoController.obterTranscricao);
+router.get('/:id', transcricaoController.getTranscriptionData);
 
 // PUT /api/transcricao/:id/salvar - Salva alterações nos segmentos de legenda
-router.put('/:id/salvar', transcricaoController.salvarLegenda);
-
-// GET /api/transcricao/:id/exportar - Exporta legenda em formato específico
-router.get('/:id/exportar', transcricaoController.exportarLegenda);
+router.put('/:id/salvar', transcricaoController.updateSegments);
 
 module.exports = router;
