@@ -46,6 +46,7 @@ db.exec(`
     started_at DATETIME,
     completed_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
   );
 
