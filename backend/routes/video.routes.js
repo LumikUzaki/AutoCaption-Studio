@@ -7,6 +7,6 @@ router.get('/stream/:id', videoController.streamVideo);
 
 // GET /api/video/download/:tipo/:id - Download de arquivo (video ou legenda)
 // tipo: 'video' ou 'legenda'
-router.get('/download/:tipo/:id', videoController.downloadArquivo);
+router.get('/download/:tipo/:id', videoController.downloadSubtitle);
 
 module.exports = router;
