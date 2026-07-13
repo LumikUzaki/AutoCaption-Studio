@@ -7,6 +7,16 @@ import sys
 import json
 import stable_ts as st
 
+# Cache de modelos para evitar recarregamento
+_model_cache = {}
+
+def get_model(model_name, device):
+    """Retorna modelo em cache ou carrega novo."""
+    cache_key = f"{model_name}_{device}"
+    if cache_key not in _model_cache:
+        _model_cache[cache_key] = st.load_model(model_name, device=device)
+    return _model_cache[cache_key]
+
 def transcribe(audio_path, model_name, device, language=None):
     """
     Transcreve áudio usando stable-ts com foco em precisão de timestamps.
@@ -21,19 +31,22 @@ def transcribe(audio_path, model_name, device, language=None):
         JSON com segmentos e words detalhadas
     """
     try:
-        # Carregar modelo
-        model = st.load_model(model_name, device=device)
+        # Carregar modelo com cache
+        model = get_model(model_name, device)
         
-        # Opções para máxima precisão de word-level timestamps
+        # Opções otimizadas para performance e precisão
         result = model.transcribe(
             audio_path,
             language=language,
             vad=True,  # Voice Activity Detection
             word_timestamps=True,  # Habilitar word-level
             regroup=True,  # Reagrupar segmentos para melhor coerência
-            ts_num=3,  # Número de iterações para refinamento de timestamps
+            ts_num=2,  # Reduzido de 3 para 2 para melhor performance
             min_word_dur=0.1,  # Duração mínima da palavra
-            only_voice_freq=False
+            only_voice_freq=False,
+            beam_size=1,  # Reduz beam search para velocidade
+            best_of=1,
+            temperature=0.0  # Temperatura fixa para consistência
         )
         
         # Processar resultado para formato padronizado

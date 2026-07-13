@@ -8,6 +8,32 @@ import json
 import whisperx
 import torch
 
+# Cache de modelos para evitar recarregamento
+_model_cache = {}
+_align_model_cache = {}
+
+def get_model(model_name, device, compute_type, language=None):
+    """Retorna modelo em cache ou carrega novo."""
+    cache_key = f"{model_name}_{device}_{compute_type}_{language}"
+    if cache_key not in _model_cache:
+        _model_cache[cache_key] = whisperx.load_model(
+            model_name, 
+            device, 
+            compute_type=compute_type,
+            language=language
+        )
+    return _model_cache[cache_key]
+
+def get_align_model(language_code, device):
+    """Retorna modelo de alinhamento em cache ou carrega novo."""
+    cache_key = f"{language_code}_{device}"
+    if cache_key not in _align_model_cache:
+        _align_model_cache[cache_key] = whisperx.load_align_model(
+            language_code=language_code, 
+            device=device
+        )
+    return _align_model_cache[cache_key]
+
 def transcribe(audio_path, model_name, device, language=None):
     """
     Transcreve áudio usando whisperx com alinhamento forçado e VAD.
@@ -30,19 +56,19 @@ def transcribe(audio_path, model_name, device, language=None):
             compute_type = "int8"
             batch_size = 4
         
-        # Carregar modelo WhisperX
-        model = whisperx.load_model(
-            model_name, 
-            device, 
-            compute_type=compute_type,
-            language=language
-        )
+        # Carregar modelo WhisperX com cache
+        model = get_model(model_name, device, compute_type, language)
         
         # Carregar áudio
         audio = whisperx.load_audio(audio_path)
         
-        # Transcrição inicial
-        result = model.transcribe(audio, batch_size=batch_size)
+        # Transcrição inicial otimizada
+        result = model.transcribe(
+            audio, 
+            batch_size=batch_size,
+            beam_size=1,  # Reduz beam search para velocidade
+            temperature=0.0  # Temperatura fixa para consistência
+        )
         
         # Detectar idioma se não fornecido
         detected_language = result.get("language", "en")
@@ -50,11 +76,8 @@ def transcribe(audio_path, model_name, device, language=None):
             language = detected_language
         
         # Alinhamento forçado (word-level)
-        # Carregar modelo de alinhamento
-        align_model, align_metadata = whisperx.load_align_model(
-            language_code=language, 
-            device=device
-        )
+        # Carregar modelo de alinhamento com cache
+        align_model, align_metadata = get_align_model(language, device)
         
         # Realinhar timestamps das palavras
         result_aligned = whisperx.align(
@@ -65,11 +88,6 @@ def transcribe(audio_path, model_name, device, language=None):
             device,
             return_char_alignments=False
         )
-        
-        # Opcional: Diarization (identificação de falantes) - pode ser ativado se necessário
-        # diarize_model = whisperx.DiarizationPipeline(device=device)
-        # diarize_segments = diarize_model(audio)
-        # result_final = whisperx.assign_word_speakers(diarize_segments, result_aligned)
         
         # Processar resultado para formato padronizado
         segments_data = []
