@@ -1,4 +1,3 @@
-const { Queue, Worker } = require('bullmq');
 const path = require('path');
 const { getDb } = require('../models/database');
 const whisperBridge = require('./whisperBridge');
@@ -6,50 +5,26 @@ const ffmpegService = require('./ffmpeg');
 const subtitleService = require('./subtitle');
 
 /**
- * Service de fila de processamento usando BullMQ.
- * Gerencia a fila de transcrições em segundo plano.
+ * Service de fila de processamento simplificado (SEM REDIS).
+ * Gerencia a fila de transcrições em segundo plano usando processamento nativo.
  */
 class QueueService {
     constructor() {
         this.queue = null;
         this.worker = null;
-        this.connectionConfig = {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: process.env.REDIS_PORT || 6379,
-        };
     }
 
     /**
-     * Inicializa a fila e o worker.
-     * Nota: Para ambientes sem Redis, podemos fallback para processamento síncrono simples.
+     * Inicializa o serviço de fila (modo simplificado sem Redis).
      */
     async init() {
-        try {
-            // Tenta inicializar com Redis
-            this.queue = new Queue('transcricao-queue', { connection: this.connectionConfig });
-            
-            this.worker = new Worker('transcricao-queue', async (job) => {
-                await this.processarJob(job);
-            }, { connection: this.connectionConfig });
-
-            this.worker.on('completed', (job) => {
-                console.log(`Job ${job.id} concluído.`);
-            });
-
-            this.worker.on('failed', (job, err) => {
-                console.error(`Job ${job.id} falhou:`, err.message);
-            });
-
-            console.log('Fila BullMQ inicializada com sucesso.');
-        } catch (error) {
-            console.warn('Redis não disponível. Usando modo de fila simplificado (sem Redis).');
-            // Fallback: processamento direto sem fila real
-            this.queue = { add: this.addJobDirect.bind(this) };
-        }
+        console.log('✅ Modo de fila simplificado iniciado (sem dependência do Redis).');
+        // Fallback: processamento direto sem fila real
+        this.queue = { add: this.addJobDirect.bind(this) };
     }
 
     /**
-     * Adiciona um job diretamente (fallback sem Redis).
+     * Adiciona um job diretamente (processamento imediato em background).
      */
     async addJobDirect(data, opts) {
         const jobId = data.jobId;
@@ -152,11 +127,11 @@ class QueueService {
     }
 
     /**
-     * Fecha conexões da fila.
+     * Fecha conexões da fila (simplificado, sem Redis).
      */
     async close() {
-        if (this.worker) await this.worker.close();
-        if (this.queue) await this.queue.close();
+        // Nada para fechar no modo simplificado
+        console.log('Serviço de fila fechado.');
     }
 }
 
