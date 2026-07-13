@@ -1,6 +1,4 @@
-const http = require('http');
 const express = require('express');
-const { Server } = require('socket.io');
 const path = require('path');
 const cors = require('cors');
 
@@ -10,19 +8,9 @@ const routes = require('./routes');
 // Importação de Serviços e Configuração
 const { initDatabase } = require('./models/database');
 const queueService = require('./services/queue');
-const setupSocketIO = require('./sockets/progress.socket');
 
 // Inicialização do Express
 const app = express();
-const server = http.createServer(app);
-
-// Configuração do Socket.IO com CORS
-const io = new Server(server, {
-    cors: {
-        origin: "*", // Em produção, restringir ao domínio real
-        methods: ["GET", "POST"]
-    }
-});
 
 // Middleware Global
 app.use(cors());
@@ -40,9 +28,8 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-
 // Inicialização do Banco de Dados e Filas (assíncrono)
-async function initializeSystem() {
+async function initializeSystem(io) {
     try {
         initDatabase();
         console.log('✅ Banco de dados inicializado com sucesso.');
@@ -50,36 +37,12 @@ async function initializeSystem() {
         await queueService.init();
         console.log('✅ Processador de filas iniciado.');
 
-        // Configuração dos Sockets
-        setupSocketIO(io);
-
         return true;
     } catch (error) {
         console.error('❌ Erro ao inicializar o sistema:', error);
-        process.exit(1);
+        throw error;
     }
 }
 
-// Configuração dos Sockets
-initializeSystem();
-
-// Constantes de Ambiente
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
-
-// Iniciar Servidor
-server.listen(PORT, HOST, () => {
-    console.log(`🚀 Servidor rodando em http://${HOST}:${PORT}`);
-    console.log(`📁 Diretório raiz: ${__dirname}`);
-});
-
-// Tratamento de erros globais
-process.on('uncaughtException', (err) => {
-    console.error('Erro não tratado:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Rejeição de promessa não tratada:', reason);
-});
-
-module.exports = { app, server, io };
+// Exporta apenas a aplicação e a função de inicialização
+module.exports = { app, initializeSystem };
